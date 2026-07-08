@@ -1,97 +1,77 @@
-# Skillforge — Clickretina Android Take-Home
+# Skillforge — Clickretina Android Assignment
 
-A premium native Android application built using **Kotlin + Jetpack Compose** that displays a complete, interactive course catalog fetched from a live REST API.
-
-This project was built using an **AI-first orchestration methodology**, demonstrating how a senior engineer can leverage modern LLMs to scaffold, refine, and deliver production-ready code with speed and high fidelity.
+Skillforge is a native Android application built in Kotlin and Jetpack Compose that displays a catalog of courses and lessons fetched from a live remote JSON API.
 
 ---
 
-## 📱 App Overview & Architecture
+## Core Features and Specs
 
-Skillforge is structured strictly under the **MVVM (Model-View-ViewModel)** architectural pattern, separating data operations from the visual presentation layer:
+- **Home Screen**: Features category horizontal filtering and popular courses vertical listings.
+- **Course Detail Screen**: Displays course metadata, tags, dynamic stats (rating, student count, duration), an instructor follow toggle, and lesson rows.
+- **Lesson Screen**: Contains a mock video player with play/pause controls, live timeline elapsed tracking, tab selections (Lessons, Notes, Resources), and in-place active lesson switching.
 
+---
+
+## Technical Stack
+
+- **UI Framework**: Jetpack Compose
+- **Navigation**: Navigation Compose (passing route parameters for screens)
+- **Networking**: Retrofit2 with OkHttp Client
+- **JSON Converter**: Moshi with KSP code-gen adapter
+- **Image Loading**: Coil Image library
+- **Architecture**: Model-View-ViewModel (MVVM) with StateFlow
+- **Test Suite**: JUnit4 + Coroutines Test Dispatchers
+
+---
+
+## Getting Started
+
+### Prerequisites
+- Android Studio Hedgehog or newer
+- Android SDK 24 or newer
+
+### Build Instructions
+To build the debug APK via CLI:
+```bash
+./gradlew assembleDebug
+# The built APK will be located at: app/build/outputs/apk/debug/app-debug.apk
 ```
-app/src/main/java/com/clickretina/skillforge/
-├── data/
-│   ├── model/          # Moshi parsed models (SkillforgeModels.kt)
-│   ├── remote/         # Retrofit interface + instance config
-│   └── repository/     # Caching repository interface + implementation
-├── theme/              # Typography (Plus Jakarta Sans), dynamic color palettes, AppTheme
-├── ui/
-│   ├── components/     # Reusable UI widgets (CategoryChip, CourseCard, LessonRow, etc.)
-│   ├── home/           # HomeScreen layout + StateFlow HomeViewModel
-│   ├── coursedetail/   # CourseDetailScreen layout + CourseDetailViewModel
-│   ├── lesson/         # LessonScreen (Mock Video Player) + LessonViewModel
-│   └── navigation/     # NavHost (SkillforgeNavHost)
-└── MainActivity.kt
-```
 
-### Key Technical Specs
-- **Min SDK:** 24 (Target SDK: 36)
-- **Networking:** Retrofit2 + OkHttp + Moshi (KSP JSON adapter code-gen)
-- **Image Loader:** Coil (`AsyncImage` with content scale crop)
-- **Font Face:** `Plus Jakarta Sans` (matching target layout)
-- **Local State Caching:** In-memory mutex-locked repository cache (single API call, no redundant fetches)
-
----
-
-## 🤖 AI Orchestration & Prompt Engineering Strategy
-
-To build this app efficiently and meet the strict spec parameters, I utilized an **iterative prompting strategy**—combining a comprehensive master prompt for scaffolding with specialized refactoring prompts for layout and styling verification.
-
-### 1. The Scaffolding Master Prompt
-Rather than asking for files piecemeal, I structured a single architectural prompt that defined the constraints, API structure, and data layer expectations clearly to the AI model:
-
-> **System Context:** You are a Senior Android Engineer building a take-home app named "Skillforge".
-> 
-> **Technology Constraints:**
-> - Language: Kotlin (100% Compose, no XML layouts).
-> - Navigation: Navigation Compose.
-> - Network: Retrofit2 + Moshi (Moshi JSON code-gen serialization).
-> - Target API Endpoint: `https://raw.githubusercontent.com/android-assesment/notes/refs/heads/main/data.json`
-> - Architecture: Clean MVVM. UI State must be represented as a sealed class: `Loading`, `Success(data)`, and `Error(message)`.
-> 
-> **Core Architectural Goals:**
-> 1. Fetch the data exactly once on start. Cache the response in the repository.
-> 2. Pass IDs over Navigation routes; resolve records from the repository cache to avoid duplicate API requests.
-> 3. Implement 3 screens: Home (with category horizontal list and courses vertical list), Course Detail (featuring tag chips, stats row, description, instructor bio, and follow button), and Lesson Screen (containing a mock video player with stateful play/pause, elapsed timeline calculations, and tabs).
-
----
-
-### 2. Design Refinement & Spec Alignment Prompt
-After the initial MVVM scaffolding was built, I ran a layout analysis check. I noted three specific formatting mismatches against the target design mock and prompted the AI to resolve them:
-
-> **Design Alignment Task:** Let's refine the layouts to match the visual spec constraints exactly. Write a code modification that applies these rules:
-> 
-> 1. **Pill Tags:** Ensure free lessons show a green `FREE` tag, but paid lessons show a grey tag labeled `PRICE` (not `LOCKED`).
-> 2. **Numeric Formats:** Student enrollment numbers must be fully comma-separated integers (`%,d` format, e.g., `18,420`), never abbreviated (no `18.4k`).
-> 3. **Time Formatting:** Course durations must display with decimal hours for partial fractions (e.g., `6.5h`), but drop the decimal if it is a whole number (e.g., `9h` instead of `9.0h`).
-> 4. **Layout Alignment:** Force the Category Chip containers to use a fixed square size (`148.dp` x `148.dp`) with a maximum text limit of 2 lines and ellipsis overflow, preventing wrapped strings from causing uneven card heights in the LazyRow.
-
----
-
-## 🔍 AI Evaluation: Co-Pilot Analysis
-
-### 🎯 What the AI Got Right
-- **Boilerplate and Routing:** The navigation host setup, Retrofit API client, and Moshi model generation were 100% correct on the first pass. This eliminated manual setup time for network modules.
-- **State Management:** Emitting UI states through Kotlin `StateFlow` and collecting them in the Compose view layer using `.collectAsState()` was cleanly implemented.
-
-### 🛠️ Where I Had to Intervene (Human-in-the-Loop)
-- **Emulator Network Quirks:** The AI could not resolve simulated network routing timeouts on the local emulator. I manually resolved this by updating the emulator configurations and applying direct DNS settings to ensure clean API calls.
-- **Spec Verification:** The AI initially fell back to standard learning app conventions (using `"LOCKED"` instead of `"PRICE"` for paid courses). I corrected this logic in `LessonRow.kt` and `CategoryChip.kt` to ensure compliance with the specific take-home rubric.
-
----
-
-## 🧪 Testing and Verification
-
-To guarantee stability, the repository contains robust unit tests in `HomeViewModelTest.kt`:
-- **Repository Success States:** Validates catalog loads and maps categories correctly.
-- **Course Field Mappings:** Verifies levels, durations, and rating strings are parsed properly.
-- **Lesson Access Rules:** Checks correct evaluation of the `isFree` boolean property across lesson elements.
-- **Failure Handling:** Asserts the view model propagates network errors cleanly to the UI layer.
-
-### How to Run Tests
+To run unit tests:
 ```bash
 ./gradlew test
 ```
-*(All tests pass successfully with green reports)*
+
+---
+
+## How I Worked with AI (Our Collaborative Process)
+
+### Tools Used
+- **Antigravity (Google DeepMind)** for initial generation, code refinement, and packaging updates.
+
+### Prompts Sent
+
+#### Scaffold Prompt
+> "Write a clean Kotlin codebase for a 3-screen Jetpack Compose app named Skillforge under package com.clickretina.skillforge. Retrofit must load the catalog from https://raw.githubusercontent.com/android-assesment/notes/refs/heads/main/data.json. Cache the response in a repository so we only fetch once on launch. The screens must be a Home list, Course Detail screen, and Lesson player screen. Do not use complex DI tools like Hilt or local DBs; keep the files focused."
+
+#### Spec Refinement Prompt
+> "The visual mocks require specific formats. Let's make sure the lesson row shows a PRICE tag instead of LOCKED. The duration hours must be 6.5h and 9h (strip trailing .0 on integers). The student count must be comma-formatted (e.g. 18,420). Write a code diff that corrects these formats across the card elements and the detail lists."
+
+#### Layout and Navigation Update
+> "Make all category card boxes in the scroll row exactly 148.dp by 148.dp so they are uniform, even if the titles wrap to two lines. Also, wire the See all buttons in HomeScreen to reset the active category filter, restoring the list to all 6 courses."
+
+---
+
+### Challenges Faced and Human Interventions
+
+#### 1. Formatting Mismatches (AI Hallucinations)
+The AI originally generated standard learning app tags like "LOCKED" and abbreviated student metrics as "18.4k" based on common conventions. I had to manually review the target specifications and instruct the AI to use exact "PRICE" text tags, raw comma-separated formatting, and clean integer truncations for course durations.
+
+#### 2. Layout Sizing Discrepancies
+When category names wrapped ("Android Development" vs "Backend & APIs"), the cards in the LazyRow rendered at different heights. I corrected the chip dimensions to a fixed square layout (148.dp x 148.dp) with maximum line boundaries and ellipses overflow.
+
+#### 3. Network Outages on the Local Emulator
+During verification, the emulator environment lost its routing gateway, making the app fall back to error views. Rather than rewriting network libraries, I troubleshot the local Android virtual device, modified DNS settings, and restarted the ADB server to bring the connection back online.
+
+#### 4. Package Refactoring
+The project was originally scaffolded under a generic workspace package name. I directed a script to refactor all source imports, directories, namespaces, and build files to "com.clickretina.skillforge" and verified that all 4 unit tests compiled and passed.
