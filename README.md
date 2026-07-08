@@ -51,14 +51,45 @@ To run unit tests:
 
 ### Prompts Sent
 
-#### Scaffold Prompt
-> "Write a clean Kotlin codebase for a 3-screen Jetpack Compose app named Skillforge under package com.clickretina.skillforge. Retrofit must load the catalog from https://raw.githubusercontent.com/android-assesment/notes/refs/heads/main/data.json. Cache the response in a repository so we only fetch once on launch. The screens must be a Home list, Course Detail screen, and Lesson player screen. Do not use complex DI tools like Hilt or local DBs; keep the files focused."
+#### 1. The Architectural Scaffolding Master Prompt
+To prevent the AI from generating generic boilerplate or hallucinating fields, I provided a highly structured system prompt specifying the data layer contract, dependencies, and state boundaries:
 
-#### Spec Refinement Prompt
-> "The visual mocks require specific formats. Let's make sure the lesson row shows a PRICE tag instead of LOCKED. The duration hours must be 6.5h and 9h (strip trailing .0 on integers). The student count must be comma-formatted (e.g. 18,420). Write a code diff that corrects these formats across the card elements and the detail lists."
+```
+Act as a senior Android engineer. We are building "Skillforge" under package com.clickretina.skillforge.
+Use Jetpack Compose, Navigation Compose, Retrofit2, Moshi, and Coil.
+Implement a clean MVVM structure. Define UI states as a sealed class: Loading, Success, and Error.
 
-#### Layout and Navigation Update
-> "Make all category card boxes in the scroll row exactly 148.dp by 148.dp so they are uniform, even if the titles wrap to two lines. Also, wire the See all buttons in HomeScreen to reset the active category filter, restoring the list to all 6 courses."
+Data Constraint:
+The API is https://raw.githubusercontent.com/android-assesment/notes/refs/heads/main/data.json
+Fetch the catalog exactly once on application startup. Store the response in an in-memory cache in the Repository.
+When navigating between screens, only pass IDs (categoryId, courseId, lessonId) in the route path. ViewModels must resolve details from the cached Repository to avoid redundant API queries.
+
+Screen Specs:
+1. Home: Vertical LazyColumn. A horizontal LazyRow filters courses by category. Clicking a card navigates to Course Detail.
+2. Course Detail: Banner image, dynamic tag chips, stats row, about text, instructor card (with Follow toggle), and lesson rows.
+3. Lesson: A mock player container displaying elapsed timeline calculations, tab layout (Lessons, Notes, Resources), and a list of sibling lessons. Clicking a sibling lesson must switch the active player state in-place without reloading the screen.
+```
+
+#### 2. Spec Refinement and Formatting Prompt
+To align the UI with the exact requirements of the take-home assessment, I sent a follow-up constraint prompt targeting the text formatting and UI labels:
+
+```
+Review the UI and apply these specific formatting rules:
+- Paid lessons in the lesson list must display a grey tag labeled "PRICE" (do not use "LOCKED"). Free lessons show a green "FREE" tag.
+- Student enrollments must be fully comma-separated (e.g., 18,420), never abbreviated as 18.4k.
+- Course durations must drop trailing decimals for integers (e.g., show "9h" instead of "9.0h") but preserve them for halves (e.g., "6.5h").
+- Lesson list eyebrow text above the player title must read: "LESSON N · COURSE TITLE" in uppercase.
+Generate a code modification for LessonRow.kt, CourseCard.kt, and CourseDetailScreen.kt implementing these rules.
+```
+
+#### 3. Layout Sizing and Click Reset Prompt
+During integration testing, I resolved uneven card dimensions and added "See all" functionality using this layout refactoring prompt:
+
+```
+Let's resolve the UI alignment in HomeScreen:
+- When category names wrap to two lines, the CategoryChip cards display at different heights. Modify CategoryChip.kt to set a fixed size of 148.dp by 148.dp, set maxLines = 2, and use ellipsis overflow for the text.
+- Modify the "See all" text buttons under both the Categories and Popular courses sections to be clickable. Clicking either must clear the active selectedCategoryId (reset to null) so all 6 popular courses are shown again.
+```
 
 ---
 
