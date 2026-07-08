@@ -5,10 +5,10 @@ plugins {
 }
 
 android {
-    namespace = "com.example.skillforge"
+    namespace = "com.clickretina.skillforge"
     compileSdk = 36
     defaultConfig {
-        applicationId = "com.example.skillforge"
+        applicationId = "com.clickretina.skillforge"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -92,3 +92,4 @@ dependencies {
   // Image loading: Coil
   implementation(libs.coil.compose)
 }
+

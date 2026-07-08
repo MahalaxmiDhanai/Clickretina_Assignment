@@ -1,147 +1,136 @@
-# Skillforge
+# Skillforge — Clickretina Android Assignment
 
-A production-quality Android learning app built in Kotlin with Jetpack Compose. Browse skill categories, explore courses, and dive into individual lessons with a mock video player experience.
-
-## Screenshots
-
-> Build the app and run it on an emulator or device to see the three screens in action.  
-> (Screen recording: attach as `screen_recording.mp4` after filming on the device)
+A native Android app built in **Kotlin + Jetpack Compose** that displays a catalog of skill-based courses fetched from a live REST API.
 
 ---
 
-## Tech Stack
+## 📱 Screens
 
-| Layer | Technology |
+| Screen | Description |
 |---|---|
-| Language | Kotlin 2.x |
-| UI | Jetpack Compose + Material 3 |
-| Navigation | Navigation Compose 2.9 |
-| Networking | Retrofit 2 + OkHttp + Moshi |
-| Images | Coil 2 (`coil-compose`) |
-| Architecture | MVVM — `data` / `ui` / `theme` |
-| DI | Manual constructor injection (no Hilt) |
-| Testing | JUnit 4 + kotlinx-coroutines-test |
-| Min SDK | 24 (Android 7.0) |
-| Target SDK | 36 |
+| **Home** | Welcome header, search bar, horizontal category chips (tap to filter), full course card list |
+| **Course Detail** | Hero banner, tags, stat row, instructor + Follow toggle, lesson list with FREE / PRICE pills |
+| **Lesson Player** | Mock video player with play/pause, live progress bar, timestamp, tabs (Lessons · Notes · Resources) |
 
 ---
 
-## Project Structure
-
-```
-app/src/main/java/com/example/skillforge/
-  data/
-    model/         SkillforgeModels.kt    (Category, Course, Instructor, Lesson)
-    remote/        SkillforgeApi.kt, RetrofitInstance.kt
-    repository/    SkillforgeRepository.kt
-  ui/
-    home/          HomeScreen.kt, HomeViewModel.kt
-    coursedetail/  CourseDetailScreen.kt, CourseDetailViewModel.kt
-    lesson/        LessonScreen.kt, LessonViewModel.kt
-    components/    CourseCard, CategoryChip, LessonRow, LoadingView, ErrorView
-    navigation/    SkillforgeNavHost.kt, Routes.kt
-    UiState.kt
-  theme/           Color.kt, Type.kt, Theme.kt
-  MainActivity.kt
-```
-
----
-
-## How to Build and Run
+## 🚀 How to Run
 
 ### Prerequisites
-- Android Studio Ladybug (2024.2.x) or newer
-- Android SDK 36 installed
-- Java 17+
+- Android Studio Hedgehog or newer
+- Android SDK 24+
+- Internet connection (loads live data from GitHub raw JSON)
 
-### Build the debug APK
+### Build & Run
 ```bash
+# Debug APK
 ./gradlew assembleDebug
-```
+# APK location: app/build/outputs/apk/debug/app-debug.apk
 
-The APK will be output to:
-```
-app/build/outputs/apk/debug/app-debug.apk
-```
-
-### Run unit tests
-```bash
+# Unit tests
 ./gradlew test
 ```
 
-### Install directly to a connected device / emulator
-```bash
-./gradlew installDebug
-```
+Or open in Android Studio → Run → ▶
 
 ---
 
-## API
+## 🏗️ Tech Stack
 
-All data comes from a single endpoint:
+| Layer | Library |
+|---|---|
+| UI | Jetpack Compose |
+| Navigation | Navigation Compose |
+| Networking | Retrofit2 + OkHttp |
+| JSON | Moshi (KSP code-gen) |
+| Images | Coil |
+| Architecture | MVVM + StateFlow |
+| Tests | JUnit4 + Coroutines Test |
+
+---
+
+## 🔗 API
+
 ```
 GET https://raw.githubusercontent.com/android-assesment/notes/refs/heads/main/data.json
 ```
 
-The response is cached in-memory per session (`SkillforgeRepositoryImpl`) so only one network call is made regardless of how many screens are open.
+Single call on app start, cached in memory. Navigation passes IDs only — no redundant network calls.
 
 ---
 
-## UI State Pattern
+## 🤖 How I Worked With AI
 
-Every screen uses a shared sealed class:
-```kotlin
-sealed class UiState<out T> {
-    data object Loading : UiState<Nothing>()
-    data class Success<T>(val data: T) : UiState<T>()
-    data class Error(val message: String) : UiState<Nothing>()
-}
+### Tools Used
+- **Antigravity (Google DeepMind)** — primary AI coding assistant used throughout the build
+
+---
+
+### Actual Prompts I Sent
+
+**Prompt 1 — Project scaffolding:**
+> "Build a complete, working Android app called Skillforge in Kotlin, from scratch. Use Jetpack Compose, Retrofit2, Moshi, Coil, Navigation Compose, and MVVM. The API is https://raw.githubusercontent.com/android-assesment/notes/refs/heads/main/data.json. Build exactly 3 screens: Home, Course Detail, Lesson Player (mock, no real video). Package name must be com.clickretina.skillforge."
+
+**Prompt 2 — Data formatting correctness:**
+> "Make sure duration hours show as 6.5h and 9h — not 9.0h. Students enrolled must show as 18,420 with a comma, not abbreviated as 18.4k. The paid lesson pill label must be PRICE, not LOCKED."
+
+**Prompt 3 — Category filtering:**
+> "Whenever I click on a category chip, filter the popular courses list to show only that category's courses. When I click See all, show all 6 courses again. The See all button under both the Categories section and the Popular courses section should both clear the filter."
+
+---
+
+### ✅ One Thing AI Got Right
+
+The AI correctly set up the entire MVVM architecture — `UiState` sealed class (Loading / Success / Error), `StateFlow` in each ViewModel, Retrofit + Moshi data models matching every field in the JSON exactly, and the Navigation Compose route graph with typed arguments (`categoryId`, `courseId`, `lessonId`). This would have taken hours manually and was generated accurately in one pass.
+
+---
+
+### ❌ One Thing AI Got Wrong — And How I Fixed It
+
+The AI initially labeled paid lessons with the text **`"LOCKED"`** instead of **`"PRICE"`** as required by the spec. It also formatted student counts as **`"18.4k"`** (abbreviated) instead of **`"18,420"`** (comma-formatted integer), and displayed whole-number durations as **`"9.0h"`** instead of **`"9h"`**.
+
+**How I fixed it:**
+- In [`LessonRow.kt`](app/src/main/java/com/clickretina/skillforge/ui/components/LessonRow.kt): changed `"LOCKED"` → `"PRICE"` in `FreeLockPill`
+- In [`CourseDetailScreen.kt`](app/src/main/java/com/clickretina/skillforge/ui/coursedetail/CourseDetailScreen.kt): added `"%,d".format(students)` for comma-formatted counts
+- In both `CourseCard.kt` and `CourseDetailScreen.kt`: added the check `if (hours % 1.0 == 0.0) "${hours.toInt()}h" else "${hours}h"` to strip trailing `.0`
+
+These were spec-critical details that the AI missed, requiring a direct code review against the live API response.
+
+---
+
+## 📂 Project Structure
+
+```
+app/src/main/java/com/clickretina/skillforge/
+├── data/
+│   ├── model/          # Data classes (SkillforgeModels.kt)
+│   ├── remote/         # Retrofit API + instance
+│   └── repository/     # SkillforgeRepository interface + impl
+├── theme/              # Colors, typography, Theme.kt
+├── ui/
+│   ├── home/           # HomeScreen + HomeViewModel
+│   ├── coursedetail/   # CourseDetailScreen + CourseDetailViewModel
+│   ├── lesson/         # LessonScreen + LessonViewModel
+│   ├── components/     # CourseCard, CategoryChip, LessonRow, etc.
+│   └── navigation/     # SkillforgeNavHost
+└── MainActivity.kt
 ```
 
-`Loading` → shows `CircularProgressIndicator`  
-`Success` → renders the screen content with a fade-in animation  
-`Error` → shows message + a **Retry** button that re-triggers the network call
-
 ---
 
-## How I Used AI
+## ✅ Assignment Checklist
 
-### Tools used
-- **Google Gemini / Antigravity** (this session)
-- **Cursor** (for local Compose syntax lookups during manual iteration)
-
-### Actual prompts used (representative selection)
-
-**Prompt 1:**
-> "Build a complete Android Skillforge app in Kotlin with Jetpack Compose, Navigation Compose, Retrofit2 + Moshi, and Coil. Use MVVM with a sealed UiState class. The API is GET https://raw.githubusercontent.com/... Return all source files with full package paths."
-
-**Prompt 2:**
-> "The navigation currently uses Navigation3. Replace it with standard Navigation Compose 2.9 using `NavHost` and string-based routes. Keep the manual DI approach with a shared repository singleton."
-
-**Prompt 3:**
-> "Write at least 4 real JUnit4 unit tests for the HomeViewModel using a FakeSuccessRepository and a FakeErrorRepository. Tests should assert Success state fields (category name, course rating, lesson isFree), and Error propagation. Use StandardTestDispatcher and runTest."
-
-### What AI got right
-The Compose UI structure for all three screens (especially `LessonScreen` with the tab row + lesson list highlighting, and `CourseDetailScreen` with the hero image + stats chips) was generated cleanly and idiomatic on the first pass. The sealed `UiState` pattern and ViewModel factory wiring were also correct from the start.
-
-### What AI got wrong — and how it was fixed
-**Problem:** The initial scaffold used **Navigation3** (a newer alpha library) as the default template, but the navigation code written used the stable `androidx.navigation.compose` composable DSL — resulting in a dependency mismatch where `NavHost` and `composable {}` DSL weren't available.
-
-**Fix:** Explicitly replaced the `nav3Core` + `lifecycleViewmodelNav3` dependencies in `libs.versions.toml` with `androidx.navigation:navigation-compose:2.9.0`, and removed the three Navigation3 implementation lines from `app/build.gradle.kts`. This brought the navigation back to the well-known stable API.
-
----
-
-## Design Decisions
-
-- **Light theme** with cream background (`#FBF6EE`) and teal accent (`#0F766E`)
-- **Plus Jakarta Sans** bundled as static TTF files in `res/font/`
-- **Category chips** double as filters — tapping a chip on Home filters the course list to that category
-- **Lesson screen** swaps the current lesson in place (no re-navigation) when you tap another lesson in the list
-- **Follow button** on Course Detail toggles between Follow / Following with local state only
-- No Hilt, no Room, no WorkManager — intentionally lightweight per the assignment scope
-
----
-
-## License
-
-MIT — submitted as a take-home assignment for Clickretina.
+- [x] 3 screens exactly as spec: Home, Course Detail, Lesson Player
+- [x] Single API call, in-memory cache
+- [x] Category filter chips (tap to filter, tap again to deselect)
+- [x] "See all" resets filter to show all 6 courses
+- [x] FREE / PRICE lesson pills (from `isFree` field)
+- [x] Duration: `6.5h` / `9h` (no trailing `.0`)
+- [x] Students: `18,420` (full comma-formatted integer)
+- [x] Instructor Follow / Following toggle (local state)
+- [x] Mock video player with play/pause + live progress simulation
+- [x] Lesson sidebar switching (active lesson highlight in-place)
+- [x] Loading + Error + Retry states on all screens
+- [x] 4 JUnit unit tests — all passing
+- [x] `assembleDebug` → clean APK
+- [x] Package: `com.clickretina.skillforge`
